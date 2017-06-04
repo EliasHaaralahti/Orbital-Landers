@@ -1,5 +1,5 @@
 const gravity = 30;
-const thrust = 1.5;
+const thrust = 50;
 const rotateSpeed = 1;
 
 var GameState = {
@@ -33,7 +33,7 @@ var GameState = {
 
     update: function() {
         if(this.game.input.keyboard.isDown(Phaser.Keyboard.W)) {
-            moveUp(this.player1)
+            vectorMove(this.player1, 90)
         }
         
         if(this.game.input.keyboard.isDown(Phaser.Keyboard.A)) {
@@ -50,7 +50,7 @@ var GameState = {
         }
 
          if(this.game.input.keyboard.isDown(Phaser.Keyboard.UP)) {
-            moveUp(this.player2)
+            vectorMove(this.player2, 90)
         }
         
         if(this.game.input.keyboard.isDown(Phaser.Keyboard.LEFT)) {
@@ -72,16 +72,16 @@ var game = new Phaser.Game(window.innerHeight, window.innerWidth, Phaser.AUTO);
 game.state.add('GameState', GameState);
 game.state.start('GameState')
 
-function moveUp(gameobject) {
+function vectorMove(gameobject, offset=0) {
     var rotation = gameobject.body.angle;
     var direction = new Phaser.Point();
-    direction.x = Math.cos(this.game.math.degToRad(rotation-90));
-    direction.y = Math.sin(this.game.math.degToRad(rotation-90));
+    direction.x = Math.cos(this.game.math.degToRad(rotation-offset));
+    direction.y = Math.sin(this.game.math.degToRad(rotation-offset));
 
     if(direction.getMagnitude() > 0) {
         direction = direction.normalize()
     }
 
-    gameobject.body.velocity.x = direction.x * 50;
-    gameobject.body.velocity.y = direction.y * 50;
+    gameobject.body.velocity.x = direction.x * thrust;
+    gameobject.body.velocity.y = direction.y * thrust;
 }
