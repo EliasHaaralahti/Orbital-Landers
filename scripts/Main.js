@@ -1,24 +1,27 @@
-const gravity = 30;
-const thrust = 1.5;
+const gravity = 11;
+const thrust = 0.5;
 const rotateSpeed = 1;
 
-// https://phaser.io/examples/v2/category/p2-physics
-// TODO: Use impact events instead? Need to figure which player hit what
+const GREEN =  0x00ff00;
+const RED =    0xff0000;
+const WHITE =  0xffffff;
+const YELLOW = 0xffff00;
 
-// Idea for ground: https://phaser.io/examples/v2/box2d/car-on-terrain
-// On collision with ground, check distance to all bonus labels? if close enough
-// to one, apply score multiplier?
+var fontStyle = { font: "64px Arial", fill: RED, backgroundColor: YELLOW }
 
-var GREEN =  0x00ff00;
-var RED =    0xff0000;
-var WHITE =  0xffffff;
-var YELLOW = 0xffff00;
+var labels = []
 
+var player1;
+var player2;
+var shapeSprite;
+
+var gameOver;
 
 var GameState = {
     init: function() {
         this.game.physics.startSystem(Phaser.Physics.ARCADE);
-        this.game.physics.arcade.gravity.y = 50;
+        this.game.physics.arcade.gravity.y = gravity;
+        gameOver = false;
     },
 
     preload: function () {
@@ -28,118 +31,117 @@ var GameState = {
     },
 
     create: function() {
-      this.line = createLine(100, 100, 500, 200);
-      game.physics.arcade.enable(this.line, Phaser.Physics.ARCADE);
+        /*
+        var line = this.game.add.graphics(0,0);
+        line.lineStyle(2, WHITE).moveTo(100, 100).lineTo(300, 200);
+        // line.boundsPadding = 0;
+
+        shapeSprite = this.game.add.sprite(0,0, 'spaceShip');
+        shapeSprite.name = "ShapeSprite";
+        shapeSprite.addChild(line)
+        // game.physics.arcade.enable(shapeSprite);
+        game.physics.enable(shapeSprite, Phaser.Physics.ARCADE)
+        // shapeSprite.body.enabled = true;
+        // shapeSprite.body.allowGravity = false
+        */
+        var text = game.add.text(-150, -150, "testiiiiiiiiiiiiiiiiing", fontStyle);
+        text.anchor.set(0.5);
+        text.width = 50;
+        text.height = 50;
 
       this.background = this.add.sprite(
           this.world.centerX, this.world.centerY, 'background');
+        this.background.scale.setTo(1.5)
+        this.background.anchor.set(0.5)
 
-      this.player1 = this.game.add.sprite(this.game.world.centerX - 150,
-          this.game.world.centerY, 'spaceShip')
-      setUpPlayer(this.player1);
-      game.physics.arcade.enable(this.player1);
-      this.player1.body.enable = true;
-      this.player1.body.drag.set(10);
-      this.player1.body.collideWorldBound = true;
-      this.player1.body.maxVelocity.set(200);
+        var text2 = game.add.text(150, 150, "testtteagg");
+        text2.anchor.set(0.5);
 
-      this.player1.onCollide = new Phaser.Signal();
-      this.player1.onCollide.add(onCollision, this);
+    this.ground = this.add.sprite(
+        this.world.centerX-400, this.world.centerY+350, 'ground');
+    this.ground.scale.setTo(2, 1)
+    this.ground.anchor.set(0.25, 0)
+    this.ground.name = "Ground";
+    game.physics.arcade.enable(this.ground)
+    this.ground.body.enabled = true
+    this.ground.body.allowGravity = false;
+    this.ground.body.immovable = true;
+
+      player1 = this.game.add.sprite(this.game.world.centerX - 150,
+          this.game.world.centerY - 200, 'spaceShip')
+      setUpPlayer(player1);
+      player1.name = "Player1"
+      game.physics.arcade.enable(player1);
+      player1.body.collideWorldBound = true;
+      player1.body.maxVelocity.set(25);
 
 
-      this.player2 = this.game.add.sprite(this.game.world.centerX + 150,
-          this.game.world.centerY, 'spaceShip')
-      setUpPlayer(this.player2);
-      game.physics.arcade.enable(this.player2);
-      this.player2.body.enable = true;
-      this.player2.body.drag.set(10);
-      this.player2.body.collideWorldBound = true;
-      this.player2.body.maxVelocity.set(200);
-
-      this.player2.onCollide = new Phaser.Signal();
-      this.player2.onCollide.add(onCollision, this);
-
+      player2 = this.game.add.sprite(this.game.world.centerX + 150,
+          this.game.world.centerY - 200, 'spaceShip')
+      setUpPlayer(player2);
+      player2.name = "Player2"
+      game.physics.arcade.enable(player2);
+      player2.body.collideWorldBound = true;
+      player2.body.maxVelocity.set(25);
     },
 
     update: function() {
-      game.physics.arcade.collide(this.player1, this.line);
-      game.physics.arcade.collide(this.player1, this.player2);
+        game.physics.arcade.collide(player1, player2, onCollision, null, this);
+        // game.physics.arcade.collide(player1, shapeSprite, onCollision, null, this);
+        game.physics.arcade.collide(player1, this.ground, onCollision, null, this);
+        game.physics.arcade.collide(player2, this.ground, onCollision, null, this);
 
         if(this.game.input.keyboard.isDown(Phaser.Keyboard.W)) {
-          moveUp(this.player1, thrust, -90)
+          moveUp(player1, thrust, -90)
         }
 
         if(this.game.input.keyboard.isDown(Phaser.Keyboard.A)) {
-            if(this.player1.angle > -90) {
-                this.player1.angle -= rotateSpeed;
+            if(player1.angle > -90) {
+                player1.angle -= rotateSpeed;
             }
         }
 
         if(this.game.input.keyboard.isDown(Phaser.Keyboard.D)) {
-            if(this.player1.angle < 90) {
-                this.player1.angle += rotateSpeed;
+            if(player1.angle < 90) {
+                player1.angle += rotateSpeed;
             }
         }
 
          if(this.game.input.keyboard.isDown(Phaser.Keyboard.UP)) {
-            moveUp(this.player2, thrust, -90)
+            moveUp(player2, thrust, -90)
         }
 
         if(this.game.input.keyboard.isDown(Phaser.Keyboard.LEFT)) {
-          if(this.player2.angle > -90) {
-              this.player2.angle -= rotateSpeed;
+          if(player2.angle > -90) {
+              player2.angle -= rotateSpeed;
           }
         }
 
         if(this.game.input.keyboard.isDown(Phaser.Keyboard.RIGHT)) {
-          if(this.player2.angle < 90) {
-              this.player2.angle += rotateSpeed;
+          if(player2.angle < 90) {
+              player2.angle += rotateSpeed;
           }
         }
 
         if(this.game.input.keyboard.isDown(Phaser.Keyboard.H)) {
-          console.log(this.player1.position.y)
+          console.log(player1.position.y)
         }
     }
 }
 
 function onCollision(object, collider) {
-  console.loc(object);
-  console.log(collider);
-}
-
-function moveUp(gameobject, thrust, offset) {
-   var rotation = gameobject.angle;
-   var direction = new Phaser.Point();
-   direction.x = Math.cos(this.game.math.degToRad(rotation-offset));
-   direction.y = Math.sin(this.game.math.degToRad(rotation-offset));
-
-    if(direction.getMagnitude() > 0) {
-        direction = direction.normalize()
+    if(collider.name == "Ground") {
+        object.body.velocity.x = 0;
+        if(!gameOver) {
+            gameOver = true;
+            console.log("Collision between: " + object.name + " and " + collider.name)
+            console.log("timer: " + game.time.totalElapsedSeconds())
+            console.log("Winner: " + object.name)
+        }   
     }
-
-    gameobject.body.velocity.x += direction.x * -thrust;
-    gameobject.body.velocity.y += direction.y * -thrust;
 }
 
-function setUpPlayer(player) {
-    player.anchor.setTo(0.5, 0.5);
-    player.scale.setTo(0.15);
-    player.boundsPadding = 0;
-}
 
-function createLine(x1, y1, x2, y2) {
-  var line = game.add.graphics(0,0);
-  line.lineStyle(2, WHITE).moveTo(x1, y1).lineTo(x2, y2);
-  line.boundsPadding = 0;
-
-  var shapeSprite = game.add.sprite(0,0);
-  shapeSprite.addChild(line)
-
-  return shapeSprite;
-}
-
-var game = new Phaser.Game(window.innerHeight, window.innerWidth, Phaser.AUTO);
-
+var game = new Phaser.Game(window.screen.width, window.screen.height, Phaser.AUTO);
 game.state.add('GameState', GameState);
 game.state.start('GameState')
