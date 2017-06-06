@@ -28,3 +28,10 @@ function createLine(x1, y1, x2, y2) {
 
   return shapeSprite;
 }
+
+function updateLastVelocity() {
+    if(!gameOver) {
+        if(!p1Destroyed) p1LastVelocity = player1.body.velocity.y;
+        if(!p2Destroyed) p2LastVelocity = player2.body.velocity.y;
+    }
+}
