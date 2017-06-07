@@ -10,8 +10,6 @@ const RED = 0xff0000;
 const WHITE = 0xffffff;
 const YELLOW = 0xffff00;
 
-var fontstyle_stats = { font: "64px Arial", fill: RED, backgroundColor: YELLOW }
-
 var labels = []
 var groundObjects = []
 
@@ -30,6 +28,9 @@ var multiplier = 1;
 
 var explosionSound;
 var actionSound;
+
+// TODO: Wait for both players to finish and calculate score 
+// TODO: If crash while holding W, leaves "animation" behind :D (remove it too)
 
 var GameState = {
     init: function() {
@@ -56,7 +57,7 @@ var GameState = {
         this.background.anchor.set(0.5)
 
         player1 = this.game.add.sprite(this.game.world.centerX - 150,
-          this.game.world.centerY - 200, 'spaceShip')
+          this.game.world.centerY - 450, 'spaceShip')
         setUpPlayer(player1);
         player1.name = "Player 1"
         game.physics.arcade.enable(player1);
@@ -64,7 +65,7 @@ var GameState = {
         player1.body.maxVelocity.set(maxSpeed);       
 
         player2 = this.game.add.sprite(this.game.world.centerX + 150,
-            this.game.world.centerY - 200, 'spaceShip')
+            this.game.world.centerY - 450, 'spaceShip')
         setUpPlayer(player2);
         player2.name = "Player 2"
         game.physics.arcade.enable(player2);
@@ -92,7 +93,7 @@ var GameState = {
         this.yVel2 = game.add.text(game.world.width - 100, 50, "Player1 y velocity", style_stats);
         this.rot2 = game.add.text(game.world.width - 100, 70, "Player1 rotation", style_stats);
 
-        this.gameOverText = game.add.text(this.game.world.centerX, this.game.world.centerY, "", style_announce);
+        this.gameOverText = game.add.text(this.game.world.centerX, this.game.world.centerY - 200, "", style_announce);
         this.gameOverText.anchor.set(0.5);
 
         player1Text = game.add.text(0, 0, player1.name, style_stats)
@@ -222,8 +223,8 @@ function onCollision(object, collider) {
             if(multiplier )
             var time = game.time.totalElapsedSeconds().toFixed(1)
             this.gameOverText.text = (
-                "Game Over!\nWinner: " + winner + "!\nTime: " + time +
-                "!\nMultiplier: " + multiplier + "!\nTotal: " + time / multiplier
+                "Game Over!\nWinner: " + winner + "\nTime: " + time +
+                "\nMultiplier: " + multiplier + "\nTotal: " + time / multiplier
             )
             actionSound.play();
         }   
