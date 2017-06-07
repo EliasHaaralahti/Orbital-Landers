@@ -220,6 +220,7 @@ function onCollision(object, collider) {
                 } else {
                   if(p1Flying) {
                     p1FinishTime = game.time.totalElapsedSeconds().toFixed(1);
+                    getMultiplier(object);
                     console.log("p1 landed, time: " + p1FinishTime)
                     p1Flying = false;
                   }
@@ -232,12 +233,12 @@ function onCollision(object, collider) {
                 } else {
                   if(p2Flying) {
                     p2FinishTime = game.time.totalElapsedSeconds().toFixed(1);
+                    getMultiplier(object);
                     console.log("p2 landed, time: " + p2FinishTime)
                     p2Flying = false;
                   }
                 }
             }
-            getMultiplier(object);
             if(!p1Flying && !p2Flying) {
               gameOver = true;
               winner = chooseWinner();
@@ -246,7 +247,7 @@ function onCollision(object, collider) {
                 this.gameOverText.text = (
                     "Game Over!\nWinner: " + winner + "\nTime: " + p1FinishTime +
                     "\nMultiplier: " + p1Multiplier + "\nTotal: " +
-                    p1FinishTimetime / p1Multiplier
+                    p1FinishTime / p1Multiplier
                 )
               }
               else if(winner == player2.name) {
@@ -254,7 +255,7 @@ function onCollision(object, collider) {
                 this.gameOverText.text = (
                     "Game Over!\nWinner: " + winner + "\nTime: " + p2FinishTime +
                     "\nMultiplier: " + p2Multiplier + "\nTotal: " +
-                    p2FinishTimetime / p2Multiplier
+                    p2FinishTime / p2Multiplier
                 )
               }
               actionSound.play();
@@ -265,11 +266,21 @@ function onCollision(object, collider) {
 
 function chooseWinner() {
   console.log("final stats");
+  console.log("p1 finish time")
   console.log(p1FinishTime)
+  console.log("p2 finish time")
   console.log(p2FinishTime)
+  console.log("p1 multiplier");
   console.log(p1Multiplier)
+  console.log("p2Multiplier");
   console.log(p2Multiplier)
-  if( (p1FinishTime / p1Multiplier) > (p2FinishTime / p2Multiplier) ) {
+  console.log("p1 result")
+  console.log(p1FinishTime / p1Multiplier)
+  console.log("p2 result")
+  console.log(p2FinishTime / p2Multiplier)
+
+  // Dafuq
+  if( (p1FinishTime / p1Multiplier) < (p2FinishTime / p2Multiplier) ) {
     return player1.name;
   } else {
     return player2.name;
@@ -279,11 +290,13 @@ function chooseWinner() {
 function getMultiplier(firstPlayer) {
     var closestLabel = getClosestLabel(firstPlayer);
     if(closestLabel != -1)
-        if(firstPlayer.name = player1.name) {
+        if(firstPlayer.name == player1.name) {
+          console.log("getting multiplier for player1")
           p1Multiplier = closestLabel.text.substring(
               0, closestLabel.text.length - 1);
         }
-        else if(firstPlayer.name = player2.name) {
+        if(firstPlayer.name == player2.name) {
+          console.log("getting multiplier for player2")
           p2Multiplier = closestLabel.text.substring(
               0, closestLabel.text.length - 1);
         }
