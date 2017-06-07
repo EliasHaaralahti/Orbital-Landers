@@ -22,14 +22,21 @@ var p2LastVelocity;
 var gameOver;
 var p1Destroyed = false;
 var p2Destroyed = false;
+var p1Flying = true;
+var p2Flying = true;
 var player1Text;
 var player2Text;
-var multiplier = 1;
+var p1Multiplier = 1;
+var p2Multiplier = 1;
+var p1FinishTime = 0;
+var p2FinishTime = 0;
+var thrust1;
+var thrust2;
 
 var explosionSound;
 var actionSound;
 
-// TODO: Wait for both players to finish and calculate score 
+// TODO: Wait for both players to finish and calculate score
 // TODO: If crash while holding W, leaves "animation" behind :D (remove it too)
 
 var GameState = {
@@ -62,7 +69,7 @@ var GameState = {
         player1.name = "Player 1"
         game.physics.arcade.enable(player1);
         player1.body.collideWorldBound = true;
-        player1.body.maxVelocity.set(maxSpeed);       
+        player1.body.maxVelocity.set(maxSpeed);
 
         player2 = this.game.add.sprite(this.game.world.centerX + 150,
             this.game.world.centerY - 450, 'spaceShip')
@@ -74,10 +81,10 @@ var GameState = {
 
         createLevel(game);
 
-        this.thrust1 = this.game.add.sprite(-150, -150, 'spaceShip_thrust');
-        setUpPlayer(this.thrust1);
-        this.thrust2 = this.game.add.sprite(-150, -150, 'spaceShip_thrust');
-        setUpPlayer(this.thrust2);
+        thrust1 = this.game.add.sprite(-150, -150, 'spaceShip_thrust');
+        setUpPlayer(thrust1);
+        thrust2 = this.game.add.sprite(-150, -150, 'spaceShip_thrust');
+        setUpPlayer(thrust2);
 
 
         var style_stats = { font: "15px Arial", fill: "#ffffff" , align: "center" };
@@ -87,7 +94,7 @@ var GameState = {
         this.xVel1 = game.add.text(20, 30, "Player1 x velocity", style_stats);
         this.yVel1 = game.add.text(20, 50, "Player1 y velocity", style_stats);
         this.rot1 = game.add.text(20, 70, "Player1 rotation", style_stats);
-    
+
         this.name2 = game.add.text(game.world.width - 100, 10, player2.name, style_stats);
         this.xVel2 = game.add.text(game.world.width - 100, 30, "Player1 x velocity", style_stats);
         this.yVel2 = game.add.text(game.world.width - 100, 50, "Player1 y velocity", style_stats);
@@ -99,17 +106,17 @@ var GameState = {
         player1Text = game.add.text(0, 0, player1.name, style_stats)
         player2Text = game.add.text(0, 0, player2.name, style_stats)
 
-        this.timerText = game.add.text(game.world.centerX, 
+        this.timerText = game.add.text(game.world.centerX,
                                         game.world.centerY - 525,
                                         "", style_stats);
-        
+
         actionSound = game.add.audio('action');
         actionSound.volume = 0.5;
         explosionSound = game.add.audio('explosion');
         explosionSound.volume = 0.1;
         this.thrustSound = game.add.audio('thrust');
         this.thrustSound.volume = 0.01;
-        
+
         timer = game.time.create(false);
         timer.loop(2000, updateLastVelocity, this);
         timer.start();
@@ -136,7 +143,7 @@ var GameState = {
             this.yVel2.text = "Vertical: " + player2.body.velocity.y.toFixed(0);
             this.rot2.text = "Angle: " + player2.angle;
         }
-        
+
         // Go through all collisions
         for(var i = 0; i < groundObjects.length; i++) {
             game.physics.arcade.collide(
@@ -202,50 +209,83 @@ function onCollision(object, collider) {
     if(collider.name.includes("Ground")) {
         object.body.velocity.x = 0;
         if(!gameOver) {
-            if(object.name === player1.name) {
-                if(p1LastVelocity > maxLandingVelocity){
-                    destroySprite(object);
-                    return;
-                }
-            } 
-            if(object.name === player2.name) {
-                if(p2LastVelocity > maxLandingVelocity){
-                    destroySprite(object);
-                    return;
-                }
-            }
             if(object.angle < -15 || object.angle > 15) {
                 destroySprite(object);
                 return;
             }
-            gameOver = true;       
-            winner = decideWinner(object); 
-            if(multiplier )
-            var time = game.time.totalElapsedSeconds().toFixed(1)
-            this.gameOverText.text = (
-                "Game Over!\nWinner: " + winner + "\nTime: " + time +
-                "\nMultiplier: " + multiplier + "\nTotal: " + time / multiplier
-            )
-            actionSound.play();
-        }   
+            if(object.name === player1.name) {
+                if(p1LastVelocity > maxLandingVelocity){
+                    destroySprite(object);
+                    return;
+                } else {
+                  p1FinishTime = game.time.totalElapsedSeconds().toFixed(1);
+                }
+            }
+            if(object.name === player2.name) {
+                if(p2LastVelocity > maxLandingVelocity){
+                    destroySprite(object);
+                    return;
+                } else {
+                  p2FinishTime = game.time.totalElapsedSeconds().toFixed(1);
+                }
+            }
+            gameOver = true;
+            getMultiplier(object);
+            if(!p1Flying && !p2Flying) {
+              // var time = game.time.totalElapsedSeconds().toFixed(1)
+              winner = chooseWinner;
+              if(winner == player1.name) {
+                this.gameOverText.text = (
+                    "Game Over!\nWinner: " + winner + "\nTime: " + p1FinishTime +
+                    "\nMultiplier: " + p1Multiplier + "\nTotal: " +
+                    p1FinishTimetime / p1Multiplier
+                )
+              }
+              else if(winner == player2.name) {
+                this.gameOverText.text = (
+                    "Game Over!\nWinner: " + winner + "\nTime: " + p2FinishTime +
+                    "\nMultiplier: " + p2Multiplier + "\nTotal: " +
+                    p2FinishTimetime / p2Multiplier
+                )
+              }
+              actionSound.play();
+            }
+        }
     }
 }
 
-function decideWinner(firstPlayer) {
-    var closestLabel = getClosestLabel(firstPlayer);
-    if(closestLabel != -1) 
-        multiplier = closestLabel.text.substring(0, closestLabel.text.length - 1);
+function chooseWinner() {
+  if( (p1FinishTime / p1Multiplier) > (p2FinishTime / p2Multiplier) ) {
+    return player1.name;
+  } else {
+    return player2.name;
+  }
+}
 
-    return firstPlayer.name;
+function getMultiplier(firstPlayer) {
+    var closestLabel = getClosestLabel(firstPlayer);
+    if(closestLabel != -1)
+        if(firstPlayer.name = player1.name) {
+          p1Multiplier = closestLabel.text.substring(
+              0, closestLabel.text.length - 1);
+        }
+        else if(firstPlayer.name = player2.name) {
+          p2Multiplier = closestLabel.text.substring(
+              0, closestLabel.text.length - 1);
+        }
 }
 
 function destroySprite(sprite) {
     if(sprite.name == player1.name){
         p1Destroyed = true;
+        p1Flying = false;
+        thrust1.destroy();
         player1Text.text = "";
     }
-    if(sprite.name == player2.name) { 
+    if(sprite.name == player2.name) {
         p2Destroyed = true;
+        p2Flying = false;
+        thrust2.destroy();
         player2Text.text = "";
     }
     explosionSound.play();
