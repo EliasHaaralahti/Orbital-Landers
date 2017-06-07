@@ -14,7 +14,7 @@ function moveUp(gameobject, thrust, offset) {
 
 function setUpPlayer(player) {
     player.anchor.setTo(0.5, 0.5);
-    player.scale.setTo(0.05);
+    player.scale.setTo(0.075);
     player.boundsPadding = 0;
 }
 

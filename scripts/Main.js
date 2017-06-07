@@ -13,6 +13,7 @@ const YELLOW = 0xffff00;
 var fontstyle_stats = { font: "64px Arial", fill: RED, backgroundColor: YELLOW }
 
 var labels = []
+var groundObjects = []
 
 var player1;
 var player2;
@@ -27,6 +28,9 @@ var player1Text;
 var player2Text;
 var multiplier = 1;
 
+var explosionSound;
+var actionSound;
+
 var GameState = {
     init: function() {
         this.game.physics.startSystem(Phaser.Physics.ARCADE);
@@ -35,9 +39,14 @@ var GameState = {
     },
 
     preload: function () {
-        this.load.image('background', 'graphics/temp_background.png');
-        this.load.image('spaceShip', 'graphics/temp_spaceShip.png');
-        this.load.image('ground', 'graphics/temp_ground.png');
+        this.load.image('background', 'graphics/background.png');
+        this.load.image('spaceShip', 'graphics/spaceShip_normal.png');
+        this.load.image('ground', 'graphics/ground.png');
+        this.load.image('spaceShip_thrust', 'graphics/spaceShip_thrust.png');
+
+        this.load.audio('explosion', 'sounds/explosion.wav');
+        this.load.audio('action', 'sounds/action.wav');
+        this.load.audio('thrust', 'sounds/thruster.wav');
     },
 
     create: function() {
@@ -46,24 +55,13 @@ var GameState = {
         this.background.scale.setTo(1.5)
         this.background.anchor.set(0.5)
 
-        this.ground = this.add.sprite(
-            this.world.centerX-400, this.world.centerY+350, 'ground');
-        this.ground.scale.setTo(2, 0.005)
-        this.ground.anchor.set(0.25, 0)
-        this.ground.name = "Ground";
-        game.physics.arcade.enable(this.ground)
-        this.ground.body.enabled = true
-        this.ground.body.allowGravity = false;
-        this.ground.body.immovable = true;
-
         player1 = this.game.add.sprite(this.game.world.centerX - 150,
           this.game.world.centerY - 200, 'spaceShip')
         setUpPlayer(player1);
         player1.name = "Player 1"
         game.physics.arcade.enable(player1);
         player1.body.collideWorldBound = true;
-        player1.body.maxVelocity.set(maxSpeed);
-
+        player1.body.maxVelocity.set(maxSpeed);       
 
         player2 = this.game.add.sprite(this.game.world.centerX + 150,
             this.game.world.centerY - 200, 'spaceShip')
@@ -73,6 +71,14 @@ var GameState = {
         player2.body.collideWorldBound = true;
         player2.body.maxVelocity.set(maxSpeed);
 
+        createLevel(game);
+
+        this.thrust1 = this.game.add.sprite(-150, -150, 'spaceShip_thrust');
+        setUpPlayer(this.thrust1);
+        this.thrust2 = this.game.add.sprite(-150, -150, 'spaceShip_thrust');
+        setUpPlayer(this.thrust2);
+
+
         var style_stats = { font: "15px Arial", fill: "#ffffff" , align: "center" };
         var style_announce = { font: "60px Arial", fill: "#ffffff", align: "center" };
 
@@ -80,11 +86,11 @@ var GameState = {
         this.xVel1 = game.add.text(20, 30, "Player1 x velocity", style_stats);
         this.yVel1 = game.add.text(20, 50, "Player1 y velocity", style_stats);
         this.rot1 = game.add.text(20, 70, "Player1 rotation", style_stats);
-
-        this.name2 = game.add.text(1800, 10, player2.name, style_stats);
-        this.xVel2 = game.add.text(1800, 30, "Player1 x velocity", style_stats);
-        this.yVel2 = game.add.text(1800, 50, "Player1 y velocity", style_stats);
-        this.rot2 = game.add.text(1800, 70, "Player1 rotation", style_stats);
+    
+        this.name2 = game.add.text(game.world.width - 100, 10, player2.name, style_stats);
+        this.xVel2 = game.add.text(game.world.width - 100, 30, "Player1 x velocity", style_stats);
+        this.yVel2 = game.add.text(game.world.width - 100, 50, "Player1 y velocity", style_stats);
+        this.rot2 = game.add.text(game.world.width - 100, 70, "Player1 rotation", style_stats);
 
         this.gameOverText = game.add.text(this.game.world.centerX, this.game.world.centerY, "", style_announce);
         this.gameOverText.anchor.set(0.5);
@@ -95,14 +101,13 @@ var GameState = {
         this.timerText = game.add.text(game.world.centerX, 
                                         game.world.centerY - 525,
                                         "", style_stats);
-
-        labels.push(game.add.text(game.world.centerX + 200,
-                                    this.game.world.centerY + 320,
-                                    "4x", style_stats));
-
-        labels.push(game.add.text(game.world.centerX - 700,
-                                    this.game.world.centerY + 320,
-                                    "2x", style_stats));
+        
+        actionSound = game.add.audio('action');
+        actionSound.volume = 0.5;
+        explosionSound = game.add.audio('explosion');
+        explosionSound.volume = 0.1;
+        this.thrustSound = game.add.audio('thrust');
+        this.thrustSound.volume = 0.01;
         
         timer = game.time.create(false);
         timer.loop(2000, updateLastVelocity, this);
@@ -130,16 +135,27 @@ var GameState = {
             this.yVel2.text = "Vertical: " + player2.body.velocity.y.toFixed(0);
             this.rot2.text = "Angle: " + player2.angle;
         }
-
-        game.physics.arcade.collide(player1, player2, onCollision, null, this);
-        game.physics.arcade.collide(player1, this.ground, onCollision, null, this);
-        game.physics.arcade.collide(player2, this.ground, onCollision, null, this);
+        
+        // Go through all collisions
+        for(var i = 0; i < groundObjects.length; i++) {
+            game.physics.arcade.collide(
+                player1, groundObjects[i], onCollision, null, this);
+            game.physics.arcade.collide(
+                player2, groundObjects[i], onCollision, null, this);
+        }
 
         if(!p1Destroyed) {
             if(this.game.input.keyboard.isDown(Phaser.Keyboard.W)) {
+                this.thrust1.position.x = player1.position.x;
+                this.thrust1.position.y = player1.position.y;
+                this.thrust1.angle = player1.angle;
                 moveUp(player1, thrust, -90)
+                this.thrustSound.play();
             }
-
+            if(!this.game.input.keyboard.isDown(Phaser.Keyboard.W)) {
+                this.thrust1.position.x = -150;
+                this.thrust1.position.y = -150;
+            }
             if(this.game.input.keyboard.isDown(Phaser.Keyboard.A)) {
                 if(player1.angle > -90) {
                     player1.angle -= rotateSpeed;
@@ -155,7 +171,15 @@ var GameState = {
 
         if(!p2Destroyed) {
             if(this.game.input.keyboard.isDown(Phaser.Keyboard.UP)) {
+                this.thrust2.position.x = player2.position.x;
+                this.thrust2.position.y = player2.position.y;
+                this.thrust2.angle = player2.angle;
                 moveUp(player2, thrust, -90)
+                this.thrustSound.play();
+            }
+            if(!this.game.input.keyboard.isDown(Phaser.Keyboard.UP)) {
+                this.thrust2.position.x = -150;
+                this.thrust2.position.y = -150;
             }
 
             if(this.game.input.keyboard.isDown(Phaser.Keyboard.LEFT)) {
@@ -174,7 +198,8 @@ var GameState = {
 }
 
 function onCollision(object, collider) {
-    if(collider.name == "Ground") {
+    if(collider.name.includes("Ground")) {
+        object.body.velocity.x = 0;
         if(!gameOver) {
             if(object.name === player1.name) {
                 if(p1LastVelocity > maxLandingVelocity){
@@ -193,50 +218,24 @@ function onCollision(object, collider) {
                 return;
             }
             gameOver = true;       
-            winner = decideWinner(); 
+            winner = decideWinner(object); 
             if(multiplier )
             var time = game.time.totalElapsedSeconds().toFixed(1)
             this.gameOverText.text = (
                 "Game Over!\nWinner: " + winner + "!\nTime: " + time +
                 "!\nMultiplier: " + multiplier + "!\nTotal: " + time / multiplier
             )
+            actionSound.play();
         }   
     }
 }
 
-function decideWinner() {
-    var closestLabel = getClosestLabel(player1);
+function decideWinner(firstPlayer) {
+    var closestLabel = getClosestLabel(firstPlayer);
     if(closestLabel != -1) 
         multiplier = closestLabel.text.substring(0, closestLabel.text.length - 1);
 
-    console.log(multiplier);
-    return player1.name;
-}
-
-function getClosestLabel(object) {
-    var closestdist = 999999;
-    var closest = -1;
-    for(var i = 0; i < labels.length; i++) {
-        distance = distanceBetween(object, labels[i]);
-        if(distance < closestdist) { 
-            closestdist = distance;
-            closest = i;
-        }
-    }
-    if(closestdist > maxLabelDistance) return -1
-    if(closest === -1) return -1;
-    console.log("ClosestDist: " + closestdist)
-    return labels[closest];
-
-}
-
-function distanceBetween(object1, object2) {
-    const x1 = object1.x;
-    const y1 = object1.y;
-    const x2 = object2.x;
-    const y2 = object2.y;
-
-    return Math.sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2));
+    return firstPlayer.name;
 }
 
 function destroySprite(sprite) {
@@ -248,6 +247,7 @@ function destroySprite(sprite) {
         p2Destroyed = true;
         player2Text.text = "";
     }
+    explosionSound.play();
     sprite.destroy();
 }
 
