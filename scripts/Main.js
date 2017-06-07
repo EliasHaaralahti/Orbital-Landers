@@ -95,10 +95,10 @@ var GameState = {
         this.yVel1 = game.add.text(20, 50, "Player1 y velocity", style_stats);
         this.rot1 = game.add.text(20, 70, "Player1 rotation", style_stats);
 
-        this.name2 = game.add.text(game.world.width - 100, 10, player2.name, style_stats);
-        this.xVel2 = game.add.text(game.world.width - 100, 30, "Player1 x velocity", style_stats);
-        this.yVel2 = game.add.text(game.world.width - 100, 50, "Player1 y velocity", style_stats);
-        this.rot2 = game.add.text(game.world.width - 100, 70, "Player1 rotation", style_stats);
+        this.name2 = game.add.text(game.world.width - 200, 10, player2.name, style_stats);
+        this.xVel2 = game.add.text(game.world.width - 200, 30, "Player1 x velocity", style_stats);
+        this.yVel2 = game.add.text(game.world.width - 200, 50, "Player1 y velocity", style_stats);
+        this.rot2 = game.add.text(game.world.width - 200, 70, "Player1 rotation", style_stats);
 
         this.gameOverText = game.add.text(this.game.world.centerX, this.game.world.centerY - 200, "", style_announce);
         this.gameOverText.anchor.set(0.5);
@@ -154,15 +154,15 @@ var GameState = {
 
         if(!p1Destroyed) {
             if(this.game.input.keyboard.isDown(Phaser.Keyboard.W)) {
-                this.thrust1.position.x = player1.position.x;
-                this.thrust1.position.y = player1.position.y;
-                this.thrust1.angle = player1.angle;
+                thrust1.position.x = player1.position.x;
+                thrust1.position.y = player1.position.y;
+                thrust1.angle = player1.angle;
                 moveUp(player1, thrust, -90)
                 this.thrustSound.play();
             }
             if(!this.game.input.keyboard.isDown(Phaser.Keyboard.W)) {
-                this.thrust1.position.x = -150;
-                this.thrust1.position.y = -150;
+                thrust1.position.x = -150;
+                thrust1.position.y = -150;
             }
             if(this.game.input.keyboard.isDown(Phaser.Keyboard.A)) {
                 if(player1.angle > -90) {
@@ -179,15 +179,15 @@ var GameState = {
 
         if(!p2Destroyed) {
             if(this.game.input.keyboard.isDown(Phaser.Keyboard.UP)) {
-                this.thrust2.position.x = player2.position.x;
-                this.thrust2.position.y = player2.position.y;
-                this.thrust2.angle = player2.angle;
+                thrust2.position.x = player2.position.x;
+                thrust2.position.y = player2.position.y;
+                thrust2.angle = player2.angle;
                 moveUp(player2, thrust, -90)
                 this.thrustSound.play();
             }
             if(!this.game.input.keyboard.isDown(Phaser.Keyboard.UP)) {
-                this.thrust2.position.x = -150;
-                this.thrust2.position.y = -150;
+                thrust2.position.x = -150;
+                thrust2.position.y = -150;
             }
 
             if(this.game.input.keyboard.isDown(Phaser.Keyboard.LEFT)) {
@@ -218,7 +218,11 @@ function onCollision(object, collider) {
                     destroySprite(object);
                     return;
                 } else {
-                  p1FinishTime = game.time.totalElapsedSeconds().toFixed(1);
+                  if(p1Flying) {
+                    p1FinishTime = game.time.totalElapsedSeconds().toFixed(1);
+                    console.log("p1 landed, time: " + p1FinishTime)
+                    p1Flying = false;
+                  }
                 }
             }
             if(object.name === player2.name) {
@@ -226,15 +230,19 @@ function onCollision(object, collider) {
                     destroySprite(object);
                     return;
                 } else {
-                  p2FinishTime = game.time.totalElapsedSeconds().toFixed(1);
+                  if(p2Flying) {
+                    p2FinishTime = game.time.totalElapsedSeconds().toFixed(1);
+                    console.log("p2 landed, time: " + p2FinishTime)
+                    p2Flying = false;
+                  }
                 }
             }
-            gameOver = true;
             getMultiplier(object);
             if(!p1Flying && !p2Flying) {
-              // var time = game.time.totalElapsedSeconds().toFixed(1)
-              winner = chooseWinner;
+              gameOver = true;
+              winner = chooseWinner();
               if(winner == player1.name) {
+                console.log("winner p1")
                 this.gameOverText.text = (
                     "Game Over!\nWinner: " + winner + "\nTime: " + p1FinishTime +
                     "\nMultiplier: " + p1Multiplier + "\nTotal: " +
@@ -242,6 +250,7 @@ function onCollision(object, collider) {
                 )
               }
               else if(winner == player2.name) {
+                console.log("winnerp2");
                 this.gameOverText.text = (
                     "Game Over!\nWinner: " + winner + "\nTime: " + p2FinishTime +
                     "\nMultiplier: " + p2Multiplier + "\nTotal: " +
@@ -255,6 +264,11 @@ function onCollision(object, collider) {
 }
 
 function chooseWinner() {
+  console.log("final stats");
+  console.log(p1FinishTime)
+  console.log(p2FinishTime)
+  console.log(p1Multiplier)
+  console.log(p2Multiplier)
   if( (p1FinishTime / p1Multiplier) > (p2FinishTime / p2Multiplier) ) {
     return player1.name;
   } else {
