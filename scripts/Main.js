@@ -1,8 +1,8 @@
-const gravity = 11;
-const thrust = 0.3;
+const gravity = 13;
+const thrust = 0.4;
 const rotateSpeed = 1;
-const maxSpeed = 60;
-const maxLandingVelocity = 20 * 5;
+const maxSpeed = 65;
+const maxLandingVelocity = 20;
 const maxLabelDistance = 125;
 
 const GREEN = 0x00ff00;
@@ -28,8 +28,8 @@ var player1Text;
 var player2Text;
 var p1Multiplier = 1;
 var p2Multiplier = 1;
-var p1FinishTime = 0;
-var p2FinishTime = 0;
+var p1FinishTime = 999;
+var p2FinishTime = 999;
 var thrust1;
 var thrust2;
 
